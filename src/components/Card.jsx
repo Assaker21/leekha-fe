@@ -14,7 +14,7 @@ function getSuitColor(suit) {
 }
 
 function getRank(value) {
-  if (value < 10) return value;
+  if (value <= 10) return value;
   if (value == 11) return "J";
   if (value == 12) return "Q";
   if (value == 13) return "K";
@@ -36,15 +36,17 @@ function getSuitCharacter(suit) {
   return "?";
 }
 
-export default function Card({ card, className }) {
-  console.log("CARD: ", card, getCardSuit(card));
+export default function Card({ card, className, enabled, selected, onClick }) {
   const suit = getCardSuit(card);
   const rank = getRank(getCardValue(card));
   return (
     <div
+      onClick={onClick}
       className={clsx(
         "bg-white rounded-xl min-w-40 w-40 max-w-40 h-60 relative flex flex-row items-center justify-center shadow-sm shadow-grey-900 z-0",
         className,
+        enabled ? "" : "opacity-50 pointer-events-none",
+        selected ? "-mb-30" : "",
       )}
     >
       <CardMark card={card} className={"absolute left-0 top-1 "} />
