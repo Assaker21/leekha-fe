@@ -40,7 +40,8 @@ function getTrickDetails(trick) {
   let winningCard = trick[trick.start];
   let winningPlayer = trick.start;
 
-  if (!winningCard) return { completed: false, winner: { card: null, player: null } };
+  if (!winningCard)
+    return { completed: false, winner: { card: null, player: null } };
 
   const startingSuit = getCardSuit(winningCard);
 
@@ -49,9 +50,11 @@ function getTrickDetails(trick) {
     if (card.includes(startingSuit)) {
       if (getCardValue(winningCard) < getCardValue(card)) {
         winningCard = card;
-        winningPlayer = Number(Object.keys(trick).find(
-          (key) => trick[key] === card && key !== "start"
-        ));
+        winningPlayer = Number(
+          Object.keys(trick).find(
+            (key) => trick[key] === card && key !== "start",
+          ),
+        );
       }
     }
   });
@@ -96,7 +99,11 @@ export function GameProvider({ children }) {
 
   const state = useMemo(() => {
     if (Object.keys(round?.passes || {}).length === 4) {
-      if (Object.values(round?.passes).every((pass) => pass.cards.length === 3 && !pass.unsent)) {
+      if (
+        Object.values(round?.passes).every(
+          (pass) => pass.cards.length === 3 && !pass.unsent,
+        )
+      ) {
         return "play";
       }
     }
@@ -124,13 +131,13 @@ export function GameProvider({ children }) {
 
   function getPlayerHand(id) {
     if (!round.hands[id]) return [];
-    
+
     // initial hand
     let hand = [...round.hands[id]];
 
     // received cards
     const receivedCards = Object.values(round.passes || {}).find(
-      (pass) => pass.to === id && !pass.unsent
+      (pass) => pass.to === id && !pass.unsent,
     )?.cards;
     if (receivedCards) {
       hand = hand.concat(receivedCards);
@@ -144,12 +151,13 @@ export function GameProvider({ children }) {
 
     // normal tricks
     hand = hand.filter(
-      (card) => !round.tricks.find((trick) => trick[id] === card)
+      (card) => !round.tricks.find((trick) => trick[id] === card),
     );
-    
+
     // sort hand by suit then value
     hand.sort((a, b) => {
       if (getCardSuit(a) !== getCardSuit(b)) {
+        if (getCardSuit(a) == "h" && getCardSuit(b) == "s") return 1;
         return getCardSuit(a).localeCompare(getCardSuit(b));
       }
       return getCardValue(a) - getCardValue(b);
@@ -158,8 +166,23 @@ export function GameProvider({ children }) {
     // find playable cards
     if (state === "pass") {
       // In pass state, if cards are already sent, you can't select anymore
-      if (!round.passes?.[id]?.unsent && round.passes?.[id]?.cards?.length > 0) {
+      if (
+        !round.passes?.[id]?.unsent &&
+        round.passes?.[id]?.cards?.length > 0
+      ) {
         return hand; // no dot
+      }
+      if (round.passes?.[id]?.unsent || !round.passes?.[id]) {
+        console.log("PASSES: ", round.passes);
+        const value = Object.values(round.passes).find(
+          (value) => value?.to == id,
+        );
+
+        console.log("VALUE NOT TO BE SENT: ", value?.cards);
+
+        return hand
+          .filter((v) => !value?.cards?.find((c) => c == v))
+          .map((c) => c + ".");
       }
       return hand.map((card) => card + ".");
     } else if (state === "play") {
@@ -169,7 +192,9 @@ export function GameProvider({ children }) {
       }
 
       const leadingSuit = getCardSuit(trick[trick.start]);
-      const hasLeadingSuit = hand.some((card) => getCardSuit(card) === leadingSuit);
+      const hasLeadingSuit = hand.some(
+        (card) => getCardSuit(card) === leadingSuit,
+      );
 
       if (hasLeadingSuit) {
         return hand.map((card) => {
@@ -181,11 +206,15 @@ export function GameProvider({ children }) {
       } else {
         const hasQofS = hand.some(isQueenOfSpades);
         const has10ofD = hand.some(isTenOfDiamonds);
-        
+
         if (hasQofS) {
-          return hand.map((card) => isQueenOfSpades(card) ? card + "." : card);
+          return hand.map((card) =>
+            isQueenOfSpades(card) ? card + "." : card,
+          );
         } else if (has10ofD) {
-          return hand.map((card) => isTenOfDiamonds(card) ? card + "." : card);
+          return hand.map((card) =>
+            isTenOfDiamonds(card) ? card + "." : card,
+          );
         } else {
           // all hand is allowed
           return hand.map((card) => card + ".");
@@ -201,8 +230,8 @@ export function GameProvider({ children }) {
     round.tricks.forEach((trick) => {
       const trickDetails = getTrickDetails(trick);
       if (trickDetails.completed && trickDetails.winner.player === id) {
-        Object.keys(trick).forEach(k => {
-          if (k !== 'start') bag.push(trick[k]);
+        Object.keys(trick).forEach((k) => {
+          if (k !== "start") bag.push(trick[k]);
         });
       }
     });
@@ -223,7 +252,7 @@ export function GameProvider({ children }) {
     if (round.tricks.length === 0) {
       // Find who has the 2 of clubs (c2)
       for (let i = 0; i < 4; i++) {
-        const hand = getPlayerHand(i).map(c => c.replace(".", ""));
+        const hand = getPlayerHand(i).map((c) => c.replace(".", ""));
         if (hand.includes("c2")) return id === i;
       }
       return id === 0; // fallback
@@ -231,13 +260,15 @@ export function GameProvider({ children }) {
 
     const currentTrick = round.tricks[round.tricks.length - 1];
     const details = getTrickDetails(currentTrick);
-    
+
     if (details.completed) {
       return details.winner.player === id; // Winner of previous trick leads
     }
-    
+
     // Trick is ongoing
-    const playersPlayed = Object.keys(currentTrick).filter(k => k !== 'start').length;
+    const playersPlayed = Object.keys(currentTrick).filter(
+      (k) => k !== "start",
+    ).length;
     const nextPlayer = (currentTrick.start + playersPlayed) % 4;
     return id === nextPlayer;
   }
@@ -256,7 +287,7 @@ export function GameProvider({ children }) {
 
   function playPassCard(id, card) {
     if (state === "play") return false;
-    
+
     const r = { ...round };
     r.passes = { ...r.passes };
     const cleanCard = card.replace(".", "");
@@ -268,14 +299,17 @@ export function GameProvider({ children }) {
     if (r.passes[id].cards.length >= 3) return false;
     if (r.passes[id].cards.includes(cleanCard)) return false;
 
-    r.passes[id] = { ...r.passes[id], cards: [...r.passes[id].cards, cleanCard] };
+    r.passes[id] = {
+      ...r.passes[id],
+      cards: [...r.passes[id].cards, cleanCard],
+    };
 
     updateRound(r);
   }
 
   function unplayPassCard(id, card) {
     if (state === "play") return false;
-    
+
     const r = { ...round };
     r.passes = { ...r.passes };
     const cleanCard = card.replace(".", "");
@@ -309,13 +343,14 @@ export function GameProvider({ children }) {
     const r = { ...round };
     r.tricks = [...r.tricks];
 
-    const lastTrick = r.tricks.length > 0 ? r.tricks[r.tricks.length - 1] : null;
+    const lastTrick =
+      r.tricks.length > 0 ? r.tricks[r.tricks.length - 1] : null;
     let currentTrickDetails = getTrickDetails(lastTrick);
 
     if (!lastTrick || currentTrickDetails.completed) {
       // Must play 2 of clubs on first trick if first player
       if (r.tricks.length === 0) {
-        const hand = getPlayerHand(id).map(c => c.replace(".", ""));
+        const hand = getPlayerHand(id).map((c) => c.replace(".", ""));
         if (hand.includes("c2") && cleanCard !== "c2") {
           return false;
         }
@@ -348,7 +383,7 @@ export function GameProvider({ children }) {
         sendPasses,
         playCard,
         state,
-        round
+        round,
       }}
     >
       {children}

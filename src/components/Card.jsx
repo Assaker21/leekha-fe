@@ -36,27 +36,44 @@ function getSuitCharacter(suit) {
   return "?";
 }
 
-export default function Card({ card, className, enabled, selected, onClick }) {
+export default function Card({
+  card,
+  className,
+  enabled,
+  selected,
+  onClick,
+  flipped,
+}) {
   const suit = getCardSuit(card);
   const rank = getRank(getCardValue(card));
   return (
     <div
       onClick={onClick}
       className={clsx(
-        "bg-white rounded-xl min-w-40 w-40 max-w-40 h-60 relative flex flex-row items-center justify-center shadow-sm shadow-grey-900 z-0",
+        "relative min-w-40 w-40 max-w-40 h-60 relative flex flex-row items-center justify-center z-0",
         className,
-        enabled ? "" : "opacity-50 pointer-events-none",
+        enabled ? "" : "bg-gray-400 pointer-events-none",
         selected ? "-mb-30" : "",
       )}
     >
-      <CardMark card={card} className={"absolute left-0 top-1 "} />
+      <img
+        className="w-full h-full absolute translate-x-2"
+        src={"/cards/shadow.png"}
+      />
+      <img
+        className="w-full h-full"
+        src={
+          flipped ? "/cards/back.png" : `/cards/${card.replace(".", "")}.png`
+        }
+      />
+      {/* <CardMark card={card} className={"absolute left-0 top-1 "} />
       <CardMark
         card={card}
         className={"absolute right-0 bottom-1 rotate-180"}
-      />
-      <span className={clsx("text-7xl", "text-" + getSuitColor(suit))}>
+      /> */}
+      {/* <span className={clsx("text-7xl", "text-" + getSuitColor(suit))}>
         {getSuitCharacter(suit)}
-      </span>
+      </span> */}
     </div>
   );
 }
