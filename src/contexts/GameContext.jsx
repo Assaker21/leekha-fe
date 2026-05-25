@@ -156,10 +156,19 @@ export function GameProvider({ children }) {
 
     // sort hand by suit then value
     hand.sort((a, b) => {
-      if (getCardSuit(a) !== getCardSuit(b)) {
-        if (getCardSuit(a) == "h" && getCardSuit(b) == "s") return 1;
-        return getCardSuit(a).localeCompare(getCardSuit(b));
+      const suitA = getCardSuit(a);
+      const suitB = getCardSuit(b);
+
+      if (suitA !== suitB) {
+        // Explicitly handle "h" vs "s" in both directions
+        if (suitA === "h" && suitB === "s") return 1;
+        if (suitA === "s" && suitB === "h") return -1;
+
+        // Fallback for all other suit combinations
+        return suitA.localeCompare(suitB);
       }
+
+      // If suits are the same, sort by value
       return getCardValue(a) - getCardValue(b);
     });
 
@@ -349,12 +358,12 @@ export function GameProvider({ children }) {
 
     if (!lastTrick || currentTrickDetails.completed) {
       // Must play 2 of clubs on first trick if first player
-      if (r.tricks.length === 0) {
-        const hand = getPlayerHand(id).map((c) => c.replace(".", ""));
-        if (hand.includes("c2") && cleanCard !== "c2") {
-          return false;
-        }
-      }
+      // if (r.tricks.length === 0) {
+      //   const hand = getPlayerHand(id).map((c) => c.replace(".", ""));
+      //   if (hand.includes("c2") && cleanCard !== "c2") {
+      //     return false;
+      //   }
+      // }
       r.tricks.push({ start: id, [id]: cleanCard });
     } else {
       const updatedTrick = { ...lastTrick };

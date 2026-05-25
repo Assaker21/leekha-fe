@@ -36,6 +36,18 @@ function getSuitCharacter(suit) {
   return "?";
 }
 
+const FANNING_POWER = 0.4;
+
+function fan(x) {
+  return (-0.25 * (x - 6.5) * (x - 6.5) + 10) * FANNING_POWER;
+}
+
+function fanRotate(x) {
+  let multiplier = 1;
+  if (x < 6.5) multiplier = -1;
+  return multiplier * 0.25 * (x - 6.5) * (x - 6.5) * FANNING_POWER;
+}
+
 export default function Card({
   card,
   className,
@@ -43,41 +55,54 @@ export default function Card({
   selected,
   onClick,
   flipped,
+  fanning,
 }) {
-  const suit = getCardSuit(card);
-  const rank = getRank(getCardValue(card));
   return (
     <div
       onClick={onClick}
       className={clsx(
-        "relative min-w-40 w-40 max-w-40 h-60 relative flex flex-row items-center justify-center z-0",
+        "relative min-w-40 w-40 max-w-40 h-60 flex flex-row items-center justify-center z-0",
         className,
-        enabled ? "" : "bg-gray-400 pointer-events-none",
-        selected ? "-mb-30" : "",
+        // enabled ? "" : "bg-gray-400 pointer-events-none",
+        // selected ? "-mb-30" : "",
       )}
+      style={
+        fanning
+          ? {
+              transform: `translate(${0}px, ${-fan(fanning.position) * 3}px) rotate(${fanRotate(fanning.position)}deg)`,
+            }
+          : null
+      }
     >
       <img
-        className="w-full h-full absolute translate-x-2"
+        className="w-full h-full absolute -translate-x-[5px] translate-y-[5px] z-0 opacity-20"
         src={"/cards/shadow.png"}
       />
       <img
-        className="w-full h-full"
+        className="w-full h-full absolute z-0 "
         src={
           flipped ? "/cards/back.png" : `/cards/${card.replace(".", "")}.png`
         }
       />
-      {/* <CardMark card={card} className={"absolute left-0 top-1 "} />
-      <CardMark
-        card={card}
-        className={"absolute right-0 bottom-1 rotate-180"}
-      /> */}
-      {/* <span className={clsx("text-7xl", "text-" + getSuitColor(suit))}>
-        {getSuitCharacter(suit)}
-      </span> */}
+
+      {!enabled && !flipped ? (
+        <img
+          className="w-full h-full opacity-20 absolute top-0 left-0 z-0"
+          src={"/cards/shadow.png"}
+        />
+      ) : null}
     </div>
   );
 }
 
+//  {/* <CardMark card={card} className={"absolute left-0 top-1 "} />
+//       <CardMark
+//         card={card}
+//         className={"absolute right-0 bottom-1 rotate-180"}
+//       /> */}
+//       {/* <span className={clsx("text-7xl", "text-" + getSuitColor(suit))}>
+//         {getSuitCharacter(suit)}
+//       </span> */}
 function CardMark({ card, className }) {
   const suit = getCardSuit(card);
   const rank = getRank(getCardValue(card));

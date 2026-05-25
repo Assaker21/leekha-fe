@@ -1,24 +1,78 @@
+import clsx from "clsx";
+import { useEffect } from "react";
 import Card from "../components/Card";
 import { useGame } from "../contexts/GameContext";
-import clsx from "clsx";
 
-function PlayerHand({ game, id, position, flipped }) {
+function PlayerHand({ game, id, position, flipped, controller }) {
   const cards = game.getPlayerHand(id);
   const isHorizontal = position === "bottom" || position === "top";
-
-  let containerClass = "absolute flex z-10 ";
-  if (position === "bottom")
-    containerClass += "flex-row bottom-4 left-1/2 -translate-x-1/2 pb-10";
-  if (position === "top")
-    containerClass += "flex-row top-4 left-1/2 -translate-x-1/2 pt-10";
-  if (position === "left")
-    containerClass += "flex-col left-4 top-1/2 -translate-y-1/2 pl-10";
-  if (position === "right")
-    containerClass += "flex-col right-4 top-1/2 -translate-y-1/2 pr-10";
 
   const passCards = game.getPassingCards(id);
   const passesSent = game.round?.passes?.[id]?.unsent === false;
   const canSend = passCards.length === 3 && !passesSent;
+
+  // --- Automation for Random Controller ---
+  useEffect(() => {
+    if (controller !== "random") return;
+
+    // 1. Handle Passing Phase Automation
+    if (game.state === "pass" && !passesSent) {
+      if (passCards.length < 3) {
+        // Find cards that haven't been selected for passing yet
+        const availableCards = cards.filter(
+          (card) => !passCards.includes(card.replace(".", "")),
+        );
+        if (availableCards.length > 0) {
+          // Select a random available card
+          const randomCard =
+            availableCards[Math.floor(Math.random() * availableCards.length)];
+          game.playPassCard(id, randomCard);
+        }
+      } else if (canSend) {
+        // Once 3 cards are selected, send them after a slight delay
+        const timer = setTimeout(() => {
+          game.sendPasses(id);
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
+    }
+
+    // 2. Handle Playing Phase Automation
+    if (game.state === "play" && game.isPlayerTurn(id)) {
+      // Filter cards that have a dot '.' indicating they are legal to play
+      const playableCards = cards.filter((card) => card.includes("."));
+
+      if (playableCards.length > 0) {
+        const timer = setTimeout(() => {
+          const randomCard =
+            playableCards[Math.floor(Math.random() * playableCards.length)];
+          game.playCard(id, randomCard);
+        }, 1000); // 1-second delay for natural gameplay rhythm
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [
+    game.state,
+    game.round?.passes,
+    cards,
+    passCards,
+    id,
+    controller,
+    passesSent,
+    canSend,
+    game.isPlayerTurn(id),
+  ]);
+
+  // --- Layout Classes Setup ---
+  let containerClass = "absolute flex z-10 ";
+  if (position === "bottom")
+    containerClass += "flex-row -bottom-2 left-1/2 -translate-x-1/2 pb-10";
+  if (position === "top")
+    containerClass += "flex-row -top-32 left-1/2 -translate-x-1/2 pt-10";
+  if (position === "left")
+    containerClass += "flex-col -left-28 top-1/2 -translate-y-1/2 pl-10";
+  if (position === "right")
+    containerClass += "flex-col -right-28 top-1/2 -translate-y-1/2 pr-10";
 
   return (
     <div className={containerClass}>
@@ -38,10 +92,10 @@ function PlayerHand({ game, id, position, flipped }) {
               onClick={() => game.sendPasses(id)}
               disabled={!canSend}
               className={clsx(
-                "px-4 py-2 rounded font-bold shadow-md whitespace-nowrap",
+                "px-4 py-2 font-bold whitespace-nowrap -mt-50",
                 canSend
-                  ? "bg-blue-500 text-white hover:bg-blue-600 cursor-pointer"
-                  : "bg-gray-300 text-gray-500",
+                  ? "bg-[#ab5236] text-white hover:bg-[#ab5236] cursor-pointer"
+                  : "bg-black/30 text-gray-200",
               )}
             >
               Send Passes
@@ -74,7 +128,7 @@ function PlayerHand({ game, id, position, flipped }) {
 
         if (game.state === "pass") {
           selected = passCards.includes(card.replace(".", ""));
-          enabled = !passesSent; // not already sent
+          enabled = !passesSent;
         } else {
           if (game.isPlayerTurn(id) && card.includes(".")) {
             enabled = true;
@@ -93,13 +147,9 @@ function PlayerHand({ game, id, position, flipped }) {
           }
         }
 
-        // Shift selected cards
         let transformClass = "";
         if (selected) {
-          if (position === "bottom") transformClass = "";
-          if (position === "top") transformClass = "";
-          if (position === "left") transformClass = "";
-          if (position === "right") transformClass = "";
+          if (position === "bottom") transformClass = "-translate-y-10";
         }
 
         return (
@@ -107,15 +157,19 @@ function PlayerHand({ game, id, position, flipped }) {
             key={card + idx}
             className={clsx(
               overlapClass,
-              "transition-transform",
+              "transition-transform relative",
               transformClass,
-              !enabled && "opacity-60",
-              position == "top" && "-translate-y-40",
-              position == "left" && "-translate-x-40",
-              position == "right" && "translate-x-40",
             )}
           >
             <Card
+              fanning={
+                !flipped
+                  ? {
+                      total: cards.length,
+                      position: idx + 0.5,
+                    }
+                  : null
+              }
               flipped={flipped}
               onClick={() => {
                 if (game.state === "pass") {
@@ -127,20 +181,27 @@ function PlayerHand({ game, id, position, flipped }) {
                     }
                   }
                 } else {
+                  console.log(
+                    "PLAYING CARD: ",
+                    id,
+                    card,
+                    enabled,
+                    game.isPlayerTurn(0),
+                  );
                   if (enabled) {
                     game.playCard(id, card);
                   }
                 }
               }}
-              enabled={true}
-              selected={false} // handled by wrapper above
+              enabled={enabled}
+              selected={selected}
               className={clsx(
-                "hover:scale-105 transition-all text-sm", // hover scale
+                "hover:scale-105 transition-all text-sm",
                 enabled ? "cursor-pointer" : "pointer-events-none",
                 position === "left" && "rotate-90",
                 position === "right" && "-rotate-90",
               )}
-              card={card.replace(".", "")} // Pass cleaned card without dot
+              card={card.replace(".", "")}
             />
           </div>
         );
@@ -158,30 +219,36 @@ function GameTable({ game }) {
         {/* Render cards based on trick object */}
         {trick && trick["0"] && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-            <Card card={trick["0"]} className="shadow-lg transform scale-75" />
+            <Card key={"Card key: " + trick["0"]} card={trick["0"]} enabled />
           </div>
         )}
         {trick && trick["1"] && (
           <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
             <Card
+              key={"Card key: " + trick["1"]}
               card={trick["1"]}
-              className="shadow-lg transform scale-75 rotate-90"
+              className=" rotate-90"
+              enabled
             />
           </div>
         )}
         {trick && trick["2"] && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
             <Card
+              key={"Card key: " + trick["2"]}
               card={trick["2"]}
-              className="shadow-lg transform scale-75 rotate-180"
+              className=" rotate-180"
+              enabled
             />
           </div>
         )}
         {trick && trick["3"] && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
             <Card
+              key={"Card key: " + trick["3"]}
               card={trick["3"]}
-              className="shadow-lg transform scale-75 -rotate-90"
+              className=" -rotate-90"
+              enabled
             />
           </div>
         )}
@@ -194,13 +261,31 @@ export default function Root({ children }) {
   const game = useGame();
 
   return (
-    <div className="bg-gray-900 flex items-center justify-center w-screen h-screen relative overflow-hidden font-sans">
+    <div className="bg-green-900 flex items-center justify-center w-screen h-screen relative overflow-hidden font-sans">
       <GameTable game={game} />
 
-      <PlayerHand game={game} id={0} position="bottom" />
-      <PlayerHand game={game} id={1} position="left" flipped />
-      <PlayerHand game={game} id={2} position="top" flipped />
-      <PlayerHand game={game} id={3} position="right" flipped />
+      <PlayerHand game={game} id={0} position="bottom" controller="player" />
+      <PlayerHand
+        game={game}
+        id={1}
+        position="left"
+        flipped
+        controller="random"
+      />
+      <PlayerHand
+        game={game}
+        id={2}
+        position="top"
+        flipped
+        controller="random"
+      />
+      <PlayerHand
+        game={game}
+        id={3}
+        position="right"
+        flipped
+        controller="random"
+      />
     </div>
   );
 }
