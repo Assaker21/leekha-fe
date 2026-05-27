@@ -5,7 +5,7 @@ import Root from "./layouts/root";
 export default function App() {
   return (
     <GameProvider>
-      <Init />
+      <Root />
     </GameProvider>
   );
 }

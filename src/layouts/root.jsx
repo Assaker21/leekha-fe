@@ -66,7 +66,7 @@ function PlayerHand({ game, id, position, flipped, controller }) {
   // --- Layout Classes Setup ---
   let containerClass = "absolute flex z-10 ";
   if (position === "bottom")
-    containerClass += "flex-row -bottom-2 left-1/2 -translate-x-1/2 pb-10";
+    containerClass += "flex-row -bottom-2 left-1/2 -translate-x-1/2 pb-2";
   if (position === "top")
     containerClass += "flex-row -top-32 left-1/2 -translate-x-1/2 pt-10";
   if (position === "left")
@@ -110,7 +110,7 @@ function PlayerHand({ game, id, position, flipped, controller }) {
       )}
 
       {/* Turn indicator */}
-      {game.state === "play" && game.isPlayerTurn(id) && (
+      {/* {game.state === "play" && game.isPlayerTurn(id) && (
         <div
           className={clsx(
             "absolute pointer-events-none rounded-full shadow-[0_0_20px_rgba(72,187,120,0.8)] border-4 border-green-500",
@@ -120,7 +120,7 @@ function PlayerHand({ game, id, position, flipped, controller }) {
             position === "right" && "-inset-6",
           )}
         />
-      )}
+      )} */}
 
       {cards.map((card, idx) => {
         let selected = false;
@@ -214,12 +214,17 @@ function GameTable({ game }) {
   const trick = game.getTable();
 
   return (
-    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full border-8 shadow-2xl flex items-center justify-center">
+    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full flex items-center justify-center">
       <div className="relative w-full h-full">
         {/* Render cards based on trick object */}
         {trick && trick["0"] && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-            <Card key={"Card key: " + trick["0"]} card={trick["0"]} enabled />
+            <Card
+              key={"Card key: " + trick["0"]}
+              card={trick["0"]}
+              enabled
+              size="sm"
+            />
           </div>
         )}
         {trick && trick["1"] && (
@@ -229,6 +234,7 @@ function GameTable({ game }) {
               card={trick["1"]}
               className=" rotate-90"
               enabled
+              size="sm"
             />
           </div>
         )}
@@ -239,6 +245,7 @@ function GameTable({ game }) {
               card={trick["2"]}
               className=" rotate-180"
               enabled
+              size="sm"
             />
           </div>
         )}
@@ -249,6 +256,7 @@ function GameTable({ game }) {
               card={trick["3"]}
               className=" -rotate-90"
               enabled
+              size="sm"
             />
           </div>
         )}
@@ -261,7 +269,29 @@ export default function Root({ children }) {
   const game = useGame();
 
   return (
-    <div className="bg-green-900 flex items-center justify-center w-screen h-screen relative overflow-hidden font-sans">
+    <div className="bg-[#10522c] flex items-center justify-center w-screen h-screen relative overflow-hidden font-sans">
+      <img src="/corner.png" className="absolute left-0 bottom-0 z-1" />
+      <img src="/corner.png" className="absolute left-0 top-0 rotate-90 z-1" />
+      <img
+        src="/corner.png"
+        className="absolute right-0 bottom-0 -rotate-90 z-1"
+      />
+      <img
+        src="/corner.png"
+        className="absolute right-0 top-0 rotate-180 z-1"
+      />
+
+      <img
+        src="/border-v.png"
+        className="absolute left-0 h-screen w-[54px] z-0"
+      />
+      <img
+        src="/border-v.png"
+        className="absolute right-0 h-screen w-[54px] z-0 rotate-180"
+      />
+      <div className="absolute top-0 w-screen h-[54px] z-0 bg-[url('/border-h.png')] bg-repeat-x bg-auto" />
+      <div className="absolute bottom-0 w-screen h-[54px] z-0 rotate-180 bg-[url('/border-h.png')] bg-repeat-x bg-auto" />
+
       <GameTable game={game} />
 
       <PlayerHand game={game} id={0} position="bottom" controller="player" />
