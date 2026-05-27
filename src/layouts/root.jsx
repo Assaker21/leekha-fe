@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useEffect } from "react";
-import Card from "../components/Card";
+import Card from "../components/Card.v2";
 import { useGame } from "../contexts/GameContext";
 
 function PlayerHand({ game, id, position, flipped, controller }) {
@@ -162,6 +162,7 @@ function PlayerHand({ game, id, position, flipped, controller }) {
             )}
           >
             <Card
+              shadow={!flipped}
               fanning={
                 !flipped
                   ? {
